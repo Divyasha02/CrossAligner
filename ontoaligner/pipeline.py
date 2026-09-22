@@ -1,4 +1,4 @@
-# Copyright 2025 Scientific Knowledge Organization (SciKnowOrg) Research Group.
+    # Copyright 2025 Scientific Knowledge Organization (SciKnowOrg) Research Group.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -52,6 +52,8 @@ class OntoAlignerPipeline:
     """
     A pipeline for performing ontology alignment tasks using various methods and models.
     """
+    '''def __init__(self, task_class: OMDataset, source_ontology_path: str, target_ontology_path: str,
+                 reference_matching_path: str, output_dir: str ="results", output_format: str ="xml"):'''
     def __init__(self, task_class: OMDataset, source_ontology_path: str, target_ontology_path: str,
                  #output_dir: str ="results", output_format: str ="xml"):
                  output_dir: str ="results", output_format: str ="xml",
@@ -321,6 +323,33 @@ class OntoAlignerPipeline:
             matchings = postprocessor(matchings)
         return matchings
 
+    def _run_retriever(self, encoder_model, model_class, postprocessor, retriever_path, device, top_k, ir_threshold):
+        """
+        Executes the retriever-based ontology alignment method.
+
+        This method leverages a retriever model to identify top-k potential matches
+        between ontologies based on their encoded representations. The results are
+        refined using a postprocessor.
+
+        Parameters:
+            encoder_model (BaseEncoder): Encoder model to encode the source and target ontologies.
+            model_class (BaseOMModel): A class implementing the retriever-based matching logic.
+            postprocessor (callable): A function to refine the matching results.
+            retriever_path (str): File path to the pretrained retriever model.
+            device (str): The computational device (e.g., 'cpu' or 'cuda').
+            top_k (int): Number of top candidate matches to retrieve.
+            ir_threshold (float): Threshold for the postprocessor to filter results.
+
+        Returns:
+            dict: The resulting matchings after encoding, retrieval, and processing.
+        """
+        encoder_output = encoder_model(source=self.dataset['source'], target=self.dataset['target'])
+        model = model_class(device=device, top_k=top_k)
+        model.load(path=retriever_path)
+        matchings = model.generate(input_data=encoder_output)
+        matchings = postprocessor(matchings, threshold=ir_threshold)
+        return matchings
+
     def _run_llm(self, encoder_model, model_class, dataset_class, postprocessor, llm_mapper,
                  llm_mapper_interested_class,
                  llm_path, device, batch_size, max_length, max_new_tokens, llm_threshold, llm_output_mode,
@@ -534,6 +563,44 @@ class OntoAlignerPipeline:
                 or target_iri
             )
         
+        return matchings
+        
+
+    def _run_rag(self, method, encoder_model, model_class, postprocessor, llm_threshold, ir_threshold, retriever_path,
+                 llm_path, rag_config, rag_mode: str = "hybrid"):
+                
+        """
+        Executes the RAG (Retriever-Augmented Generation) ontology alignment method.
+
+        This method combines retriever-based and LLM-based techniques to generate
+        ontology matchings. A retriever identifies candidate matches, and an LLM
+        refines the results. The final matchings are postprocessed to meet thresholds.
+
+        Parameters:
+            method (str): Specific RAG method to use (e.g., 'icv-rag', 'fewshot-rag').
+            encoder_model (BaseEncoder): Encoder model to encode the ontologies.
+            model_class (BaseOMModel): A class implementing RAG-based matching logic.
+            postprocessor (callable): A function to refine the matching results.
+            llm_threshold (float): Confidence threshold for the LLM-based predictions.
+            ir_threshold (float): Score threshold for the retriever results.
+            retriever_path (str): File path to the retriever model.
+            llm_path (str): File path to the LLM model.
+            rag_config (dict): Configuration parameters for the RAG model.
+            rag_mode (str): "hybrid" to apply postprocessing, "raw" to return raw model outputs.
+
+        Returns:
+            dict: The resulting matchings after encoding, RAG generation, and processing.
+        """
+        encoder_output = encoder_model(source=self.dataset['source'],
+                                       target=self.dataset['target'],
+                                       reference=self.dataset[
+                                           'reference'] if method == 'icv-rag' or method == 'fewshot-rag' else None)
+        model = model_class(**rag_config)
+        model.load(llm_path=llm_path, ir_path=retriever_path)
+        matchings = model.generate(input_data=encoder_output)
+        if rag_mode == "raw":
+            return matchings
+        matchings, _ = postprocessor(matchings, ir_score_threshold=ir_threshold, llm_confidence_th=llm_threshold)
         return matchings
 
     def _process_results(self, matchings, method, evaluate, return_matching, output_file_name, save_matchings):
