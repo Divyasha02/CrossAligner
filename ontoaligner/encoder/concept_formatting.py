@@ -20,32 +20,6 @@ def _join_axioms(axioms: List[str]) -> str:
     return "; ".join(cleaned_axioms) if cleaned_axioms else "(none)"
 
 
-
-def _format_restrictions(restrictions: List[Dict[str, Any]]) -> str:
-    rendered_restrictions = []
-    for restriction in restrictions or []:
-        on_property = restriction.get("on_property")
-        some_values_from = restriction.get("someValuesFrom")
-        all_values_from = restriction.get("allValuesFrom")
-        cardinality = restriction.get("cardinality")
-        min_cardinality = restriction.get("minCardinality")
-        max_cardinality = restriction.get("maxCardinality")
-
-        if on_property and some_values_from:
-            rendered_restrictions.append(f"{on_property} some {some_values_from}")
-        elif on_property and all_values_from:
-            rendered_restrictions.append(f"{on_property} all {all_values_from}")
-        elif on_property and cardinality is not None:
-            rendered_restrictions.append(f"{on_property} exactly {cardinality}")
-        elif on_property and min_cardinality is not None:
-            rendered_restrictions.append(f"{on_property} min {min_cardinality}")
-        elif on_property and max_cardinality is not None:
-            rendered_restrictions.append(f"{on_property} max {max_cardinality}")
-        elif on_property:
-            rendered_restrictions.append(str(on_property))
-    return "; ".join(rendered_restrictions) if rendered_restrictions else "(none)"
-
-
 # Stage 1 
 def format_candidate_concept_context(owl: Dict[str, Any]) -> str:
     """Context for first-stage candidate selection.
@@ -80,57 +54,3 @@ def format_concept_context(owl: Dict[str, Any]) -> str:
         f"Definitions: {definition}\n"
         f"Verbalized Axioms: {verbalized_axioms}\n"
     )
-
-
-
-def format_concept_definition_context(owl: Dict[str, Any]) -> str:
-    """
-    Compact concept context intended for retrieval encoders.
-
-    Includes only concept label/name and definition/comment text.
-    """
-    concept_label = owl.get("label") or owl.get("name") or owl.get("iri", "(none)")
-    definition = _join_comments(owl.get("comment", []))
-    return (
-        f"Concept: {concept_label}\n"
-        f"Definition: {definition}"
-        f"Restrictions: {restrictions}"
-    )
-
-
-def format_concept_prompt_context(owl: Dict[str, Any]) -> str:
-    """
-    Rich concept context intended for prompt-side RAG datasets.
-
-    Includes concept + parents + children + synonyms + definition only.
-    """
-    concept_label = owl.get("label") or owl.get("name") or owl.get("iri", "(none)")
-    definition = _join_comments(owl.get("comment", []))
-    return (
-        f"Concept: {concept_label}"
-    )
-
-
-'''def format_concept_prompt_context(owl: Dict[str, Any]) -> str:
-    """
-    Rich concept context intended for prompt-side RAG datasets.
-
-    Includes concept + parents + children + synonyms + definition only.
-    """
-    concept_label = owl.get("label") or owl.get("name") or owl.get("iri", "(none)")
-    parents = _join_labels(owl.get("parents", []))
-    childrens = _join_labels(owl.get("childrens", []))
-    synonyms = _join_labels(owl.get("synonyms", []))
-    definition = _join_comments(owl.get("comment", []))
-    return (
-        f"Concept: {concept_label}"
-    )
-
-    return (
-        f"Concept: {concept_label}\n"
-        f"Parents: {parents}\n"
-        f"Children: {childrens}\n"
-        f"Synonyms: {synonyms}\n"
-        f"Definition: {definition}\n"
-        f"Restrictions: {restrictions}"
-    )'''

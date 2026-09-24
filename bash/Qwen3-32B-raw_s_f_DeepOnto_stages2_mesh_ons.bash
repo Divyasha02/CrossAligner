@@ -41,10 +41,11 @@ from ontoaligner.encoder.concept_formatting import (
 
 from ontoaligner.ontology.generic import GenericOMDataset
 from ontoaligner.pipeline import OntoAlignerPipeline
-from ontoaligner.ontology.deeponto_verbalizer import (
-    DeepOntoAxiomEnricher,
-)
-
+from ontoaligner.ontology.deeponto_verbalizer import DeepOntoAxiomEnricher
+from ontoaligner.aligner.llm.dataset import MeshOnsSourceToTargetZeroShotDataset
+from ontoaligner.aligner.llm.dataset import MeshOnsTargetToSourceZeroShotDataset
+from ontoaligner.aligner.llm.dataset import MeshOnsSourceToTargetFewShotDataset
+from ontoaligner.aligner.llm.dataset import MeshOnsTargetToSourceFewShotDataset
 
 candidate_file = (
     "/vast/ve83rur/OntoAligner/bash/"
@@ -123,7 +124,10 @@ target_enricher.enrich(
 out = pipe(
     method="llm",
     encoder_model=ConceptLLMEncoder(),
-    dataset_class=CandidateConceptLLMDataset,
+    dataset_class=MeshOnsSourceToTargetZeroShotDataset,
+    #dataset_class=MeshOnsTargetToSourceZeroShotDataset,
+    #dataset_class=MeshOnsSourceToTargetFewShotDataset,
+    #dataset_class=MeshOnsTargetToSourceFewShotDataset,
 
     candidate_matching_path=candidate_file,
     llm_prompt_preview_count=1,                       # For all the input to the prompt print in log # llm_prompt_preview_count=14, by default to 0

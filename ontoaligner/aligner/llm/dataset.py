@@ -70,17 +70,43 @@ class ConceptLLMDataset(LLMDataset):
         return self.prompt.replace("{source}", source).replace("{target}", target)
 
 
-#Stage 2
+###################################
+           # Stage 2 #
+###################################
 
 
-##################
-1. #### MeSH-ONS ####
-##################
+class CandidateConceptLLMDataset(ConceptLLMDataset):
+
+    prompt = None
+
+    def __init__(self, source_onto, target_onto, candidate_pairs):
+        if not self.prompt:
+            raise ValueError(f"{self.__class__.__name__} must define a prompt.")
+
+        source_by_iri = {item["iri"]: item for item in source_onto}
+        target_by_iri = {item["iri"]: item for item in target_onto}
+        self.data = []
+
+        for pair in candidate_pairs:
+            source = source_by_iri.get(pair["source"])
+            target = target_by_iri.get(pair["target"])
+            if source is not None and target is not None:
+                self.data.append({
+                    "source": source,
+                    "target": target,
+                })
+
+        self.len = len(self.data)
 
 
+#############################
+        # MeSH ONS #
+#############################
 
 # Concept1-2 without_example
-'''class CandidateConceptLLMDataset(ConceptLLMDataset):
+
+class MeshOnsSourceToTargetZeroShotDataset(CandidateConceptLLMDataset):
+
     prompt = """You are an expert in ontology alignment and semantic relationship identification.
 
 Determine whether Concept 1 has a direct and meaningful semantic relationship with Concept 2 using their concept, parents, childrens, synonyms definitions, verbalized axioms.
@@ -113,33 +139,10 @@ Required JSON format:
 ### Your Answer:
 """
 
-    def __init__(self, source_onto, target_onto, candidate_pairs):
-        source_by_iri = {
-            item["iri"]: item
-            for item in source_onto
-        }
-        target_by_iri = {
-            item["iri"]: item
-            for item in target_onto
-        }
 
-        self.data = []
-
-        for pair in candidate_pairs:
-            source = source_by_iri.get(pair["source"])
-            target = target_by_iri.get(pair["target"])
-
-            if source is not None and target is not None:
-                self.data.append({
-                    "source": source,
-                    "target": target,
-                })
-
-        self.len = len(self.data)
-
-#/no_think 
 # Concept 2-1 without_example
-class CandidateConceptLLMDataset(ConceptLLMDataset):
+
+class MeshOnsTargetToSourceZeroShotDataset(CandidateConceptLLMDataset):
     prompt = """You are an expert in ontology alignment and semantic relationship identification.
 Determine whether Concept 2 has a direct and meaningful semantic relationship with Concept 1 using their concept, parents, childrens, synonyms, definitions, verbalized axioms.
 
@@ -171,33 +174,11 @@ Required JSON format:
 ### Your Answer:
 """
 
-    def __init__(self, source_onto, target_onto, candidate_pairs):
-        source_by_iri = {
-            item["iri"]: item
-            for item in source_onto
-        }
-        target_by_iri = {
-            item["iri"]: item
-            for item in target_onto
-        }
-
-        self.data = []
-
-        for pair in candidate_pairs:
-            source = source_by_iri.get(pair["source"])
-            target = target_by_iri.get(pair["target"])
-
-            if source is not None and target is not None:
-                self.data.append({
-                    "source": source,
-                    "target": target,
-                })
-
-        self.len = len(self.data)
         
 
 # Concept1-2 with_example
-class CandidateConceptLLMDataset(ConceptLLMDataset):
+
+class MeshOnsSourceToTargetFewShotDataset(CandidateConceptLLMDataset):
     prompt = """You are an expert in ontology alignment and semantic relationship identification.
 
 Determine whether Concept 1 has a direct and meaningful semantic relationship with Concept 2 using their concept, parents, childrens, synonyms definitions, verbalized axioms.
@@ -271,33 +252,11 @@ Answer:
 ### Your Answer:
 """
 
-    def __init__(self, source_onto, target_onto, candidate_pairs):
-        source_by_iri = {
-            item["iri"]: item
-            for item in source_onto
-        }
-        target_by_iri = {
-            item["iri"]: item
-            for item in target_onto
-        }
-
-        self.data = []
-
-        for pair in candidate_pairs:
-            source = source_by_iri.get(pair["source"])
-            target = target_by_iri.get(pair["target"])
-
-            if source is not None and target is not None:
-                self.data.append({
-                    "source": source,
-                    "target": target,
-                })
-
-        self.len = len(self.data)'''
         
 
 # Concept 2-1 with_example
-class CandidateConceptLLMDataset(ConceptLLMDataset):
+
+class MeshOnsTargetToSourceFewShotDataset(CandidateConceptLLMDataset):
     prompt = """You are an expert in ontology alignment and semantic relationship identification.
 
 Determine whether Concept 2 has a direct and meaningful semantic relationship with Concept 1 using their concept, parents, childrens, synonyms definitions, verbalized axioms.
@@ -370,35 +329,7 @@ Answer:
 
 ### Your Answer:
 """
-
-    def __init__(self, source_onto, target_onto, candidate_pairs):
-        source_by_iri = {
-            item["iri"]: item
-            for item in source_onto
-        }
-        target_by_iri = {
-            item["iri"]: item
-            for item in target_onto
-        }
-
-        self.data = []
-
-        for pair in candidate_pairs:
-            source = source_by_iri.get(pair["source"])
-            target = target_by_iri.get(pair["target"])
-
-            if source is not None and target is not None:
-                self.data.append({
-                    "source": source,
-                    "target": target,
-                })
-
-        self.len = len(self.data)
         
-
-
-
-
 
 
 ##################
@@ -408,7 +339,8 @@ Answer:
 
 
 # Concept1-2 without_example
-'''class CandidateConceptLLMDataset(ConceptLLMDataset):
+
+class OccoOnsSourceToTargetZeroShotDataset(CandidateConceptLLMDataset):
     prompt = """You are an expert in ontology alignment and semantic relationship identification.
 
 Determine whether Concept 1 has a direct and meaningful semantic relationship with Concept 2 using their concept, parents, childrens, synonyms definitions, verbalized axioms.
@@ -441,35 +373,10 @@ Required JSON format:
 ### Your Answer:
 """
 
-    def __init__(self, source_onto, target_onto, candidate_pairs):
-        source_by_iri = {
-            item["iri"]: item
-            for item in source_onto
-        }
-        target_by_iri = {
-            item["iri"]: item
-            for item in target_onto
-        }
 
-        self.data = []
-
-        for pair in candidate_pairs:
-            source = source_by_iri.get(pair["source"])
-            target = target_by_iri.get(pair["target"])
-
-            if source is not None and target is not None:
-                self.data.append({
-                    "source": source,
-                    "target": target,
-                })
-
-        self.len = len(self.data)
-
-
-
-#/no_think 
 # Concept 2-1 without_example
-class CandidateConceptLLMDataset(ConceptLLMDataset):
+
+class OccoOnsTargetToSourceZeroShotDataset(CandidateConceptLLMDataset):
     prompt = """You are an expert in ontology alignment and semantic relationship identification.
 Determine whether Concept 2 has a direct and meaningful semantic relationship with Concept 1 using their concept, parents, childrens, synonyms, definitions, verbalized axioms.
 
@@ -501,33 +408,11 @@ Required JSON format:
 ### Your Answer:
 """
 
-    def __init__(self, source_onto, target_onto, candidate_pairs):
-        source_by_iri = {
-            item["iri"]: item
-            for item in source_onto
-        }
-        target_by_iri = {
-            item["iri"]: item
-            for item in target_onto
-        }
-
-        self.data = []
-
-        for pair in candidate_pairs:
-            source = source_by_iri.get(pair["source"])
-            target = target_by_iri.get(pair["target"])
-
-            if source is not None and target is not None:
-                self.data.append({
-                    "source": source,
-                    "target": target,
-                })
-
-        self.len = len(self.data)
         
 
 # Concept1-2 with_example
-class CandidateConceptLLMDataset(ConceptLLMDataset):
+
+class OccoOnsSourceToTargetFewShotDataset(CandidateConceptLLMDataset):
     prompt = """You are an expert in ontology alignment and semantic relationship identification.
 
 Determine whether Concept 1 has a direct and meaningful semantic relationship with Concept 2 using their concept, parents, childrens, synonyms definitions, verbalized axioms.
@@ -601,34 +486,11 @@ Answer:
 
 ### Your Answer:
 """
-
-    def __init__(self, source_onto, target_onto, candidate_pairs):
-        source_by_iri = {
-            item["iri"]: item
-            for item in source_onto
-        }
-        target_by_iri = {
-            item["iri"]: item
-            for item in target_onto
-        }
-
-        self.data = []
-
-        for pair in candidate_pairs:
-            source = source_by_iri.get(pair["source"])
-            target = target_by_iri.get(pair["target"])
-
-            if source is not None and target is not None:
-                self.data.append({
-                    "source": source,
-                    "target": target,
-                })
-
-        self.len = len(self.data)
         
 
 # Concept 2-1 with_example
-class CandidateConceptLLMDataset(ConceptLLMDataset):
+
+class OccoOnsTargetToSourceFewShotDataset(CandidateConceptLLMDataset):
     prompt = """You are an expert in ontology alignment and semantic relationship identification.
 
 Determine whether Concept 2 has a direct and meaningful semantic relationship with Concept 1 using their concept, parents, childrens, synonyms definitions, verbalized axioms.
@@ -702,35 +564,6 @@ Answer:
 ### Your Answer:
 """
 
-    def __init__(self, source_onto, target_onto, candidate_pairs):
-        source_by_iri = {
-            item["iri"]: item
-            for item in source_onto
-        }
-        target_by_iri = {
-            item["iri"]: item
-            for item in target_onto
-        }
-
-        self.data = []
-
-        for pair in candidate_pairs:
-            source = source_by_iri.get(pair["source"])
-            target = target_by_iri.get(pair["target"])
-
-            if source is not None and target is not None:
-                self.data.append({
-                    "source": source,
-                    "target": target,
-                })
-
-        self.len = len(self.data)
-
-
-
-
-
-
 
 
 ##################
@@ -740,7 +573,8 @@ Answer:
 
 
 # Concept1-2 without_example
-class CandidateConceptLLMDataset(ConceptLLMDataset):
+
+class OccoMeshSourceToTargetZeroShotDataset(CandidateConceptLLMDataset):
     prompt = """You are an expert in ontology alignment and semantic relationship identification.
 
 Determine whether Concept 1 has a direct and meaningful semantic relationship with Concept 2 using their concept, parents, childrens, synonyms definitions, verbalized axioms.
@@ -773,33 +607,10 @@ Required JSON format:
 ### Your Answer:
 """
 
-    def __init__(self, source_onto, target_onto, candidate_pairs):
-        source_by_iri = {
-            item["iri"]: item
-            for item in source_onto
-        }
-        target_by_iri = {
-            item["iri"]: item
-            for item in target_onto
-        }
 
-        self.data = []
-
-        for pair in candidate_pairs:
-            source = source_by_iri.get(pair["source"])
-            target = target_by_iri.get(pair["target"])
-
-            if source is not None and target is not None:
-                self.data.append({
-                    "source": source,
-                    "target": target,
-                })
-
-        self.len = len(self.data)
-
-#/no_think 
 # Concept 2-1 without_example
-class CandidateConceptLLMDataset(ConceptLLMDataset):
+
+class OccoMeshTargetToSourceZeroShotDataset(CandidateConceptLLMDataset):
     prompt = """You are an expert in ontology alignment and semantic relationship identification.
 Determine whether Concept 2 has a direct and meaningful semantic relationship with Concept 1 using their concept, parents, childrens, synonyms, definitions, verbalized axioms.
 
@@ -830,34 +641,11 @@ Required JSON format:
 
 ### Your Answer:
 """
-
-    def __init__(self, source_onto, target_onto, candidate_pairs):
-        source_by_iri = {
-            item["iri"]: item
-            for item in source_onto
-        }
-        target_by_iri = {
-            item["iri"]: item
-            for item in target_onto
-        }
-
-        self.data = []
-
-        for pair in candidate_pairs:
-            source = source_by_iri.get(pair["source"])
-            target = target_by_iri.get(pair["target"])
-
-            if source is not None and target is not None:
-                self.data.append({
-                    "source": source,
-                    "target": target,
-                })
-
-        self.len = len(self.data)
         
 
 # Concept1-2 with_example
-class CandidateConceptLLMDataset(ConceptLLMDataset):
+
+class OccoMeshSourceToTargetFewShotDataset(CandidateConceptLLMDataset):
     prompt = """You are an expert in ontology alignment and semantic relationship identification.
 
 Determine whether Concept 1 has a direct and meaningful semantic relationship with Concept 2 using their concept, parents, childrens, synonyms definitions, verbalized axioms.
@@ -929,34 +717,11 @@ Answer:
 
 ### Your Answer:
 """
-
-    def __init__(self, source_onto, target_onto, candidate_pairs):
-        source_by_iri = {
-            item["iri"]: item
-            for item in source_onto
-        }
-        target_by_iri = {
-            item["iri"]: item
-            for item in target_onto
-        }
-
-        self.data = []
-
-        for pair in candidate_pairs:
-            source = source_by_iri.get(pair["source"])
-            target = target_by_iri.get(pair["target"])
-
-            if source is not None and target is not None:
-                self.data.append({
-                    "source": source,
-                    "target": target,
-                })
-
-        self.len = len(self.data)
         
 
 # Concept 2-1 with_example
-class CandidateConceptLLMDataset(ConceptLLMDataset):
+
+class OccoMeshTargetToSourceFewShotDataset(CandidateConceptLLMDataset):
     prompt = """You are an expert in ontology alignment and semantic relationship identification.
 
 Determine whether Concept 2 has a direct and meaningful semantic relationship with Concept 1 using their concept, parents, childrens, synonyms definitions, verbalized axioms.
@@ -1028,85 +793,3 @@ Answer:
 
 ### Your Answer:
 """
-
-    def __init__(self, source_onto, target_onto, candidate_pairs):
-        source_by_iri = {
-            item["iri"]: item
-            for item in source_onto
-        }
-        target_by_iri = {
-            item["iri"]: item
-            for item in target_onto
-        }
-
-        self.data = []
-
-        for pair in candidate_pairs:
-            source = source_by_iri.get(pair["source"])
-            target = target_by_iri.get(pair["target"])
-
-            if source is not None and target is not None:
-                self.data.append({
-                    "source": source,
-                    "target": target,
-                })
-
-        self.len = len(self.data)
-
-
-
-
-
-
-###### Extra #####
-
-
-
-class ConceptParentLLMDataset(LLMDataset):
-    prompt = """Determine whether the following two concepts, along with their parent categories, refer to the same real-world entity. Respond with "yes" or "no" only.
-### Concept 1:
-{source}
-**Parents**: {source_parents}
-### Concept 2:
-{target}
-**Parents**: {target_parents}
-### Your Answer:"""
-
-    def fill_one_sample(self, input_data: Any) -> str:
-        template = self.prompt
-        source = self.preprocess(input_data["source"]["concept"])
-        target = self.preprocess(input_data["target"]["concept"])
-        source_parents = self.preprocess(input_data["source"]["parents"])
-        target_parents = self.preprocess(input_data["target"]["parents"])
-        template = (
-            template.replace("{source}", source)
-            .replace("{target}", target)
-            .replace("{source_parents}", source_parents)
-            .replace("{target_parents}", target_parents)
-        )
-        return template
-
-
-class ConceptChildrenLLMDataset(LLMDataset):
-    prompt = """Determine whether the following two concepts, along with their child categories, refer to the same real-world entity. Respond with "yes" or "no" only.
-### Concept 1:
-{source}
-**Children**: {source_children}
-### Concept 2:
-{target}
-**Children**: {target_children}
-### Your Answer:  """
-
-    def fill_one_sample(self, input_data: Any) -> str:
-        template = self.prompt
-        source = self.preprocess(input_data["source"]["concept"])
-        target = self.preprocess(input_data["target"]["concept"])
-        source_children = self.preprocess(input_data["source"]["childrens"])
-        target_children = self.preprocess(input_data["target"]["childrens"])
-        template = (
-            template.replace("{source}", source)
-            .replace("{target}", target)
-            .replace("{source_children}", source_children)
-            .replace("{target_children}", target_children)
-        )
-        return template'''

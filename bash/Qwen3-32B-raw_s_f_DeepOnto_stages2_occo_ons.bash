@@ -41,9 +41,11 @@ from ontoaligner.encoder.concept_formatting import (
 
 from ontoaligner.ontology.generic import GenericOMDataset
 from ontoaligner.pipeline import OntoAlignerPipeline
-from ontoaligner.ontology.deeponto_verbalizer import (
-    DeepOntoAxiomEnricher,
-)
+from ontoaligner.ontology.deeponto_verbalizer import DeepOntoAxiomEnricher
+from ontoaligner.aligner.llm.dataset import OccoMeshSourceToTargetZeroShotDataset
+from ontoaligner.aligner.llm.dataset import OccoMeshTargetToSourceZeroShotDataset
+from ontoaligner.aligner.llm.dataset import OccoMeshSourceToTargetFewShotDataset
+from ontoaligner.aligner.llm.dataset import OccoMeshTargetToSourceFewShotDataset
 
 
 #candidate_file = (
@@ -122,7 +124,10 @@ target_enricher.enrich(
 out = pipe(
     method="llm",
     encoder_model=ConceptLLMEncoder(),
-    dataset_class=CandidateConceptLLMDataset,
+    dataset_class=OccoMeshSourceToTargetZeroShotDataset,
+    #dataset_class=OccoMeshTargetToSourceZeroShotDataset,
+    #dataset_class=OccoMeshSourceToTargetFewShotDataset,
+    #dataset_class=OccoMeshTargetToSourceFewShotDataset,
 
     candidate_matching_path=candidate_file,
     llm_prompt_preview_count=2,                       # For all the input to the prompt print in log # llm_prompt_preview_count=14, by default to 0
