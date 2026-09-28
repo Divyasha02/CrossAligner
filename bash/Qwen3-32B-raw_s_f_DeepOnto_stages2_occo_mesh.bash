@@ -14,7 +14,8 @@
 #SBATCH --mail-type=ALL
 
 
-
+set -euo pipefail
+mkdir -p logs
 
 echo "# Job $SLURM_JOB_NAME started at $(date +%F-%T)"
 module purge;
@@ -22,9 +23,6 @@ module purge;
 export http_proxy="http://internet4nzm.rz.uni-jena.de:3128"
 export https_proxy="http://internet4nzm.rz.uni-jena.de:3128"
 export HUGGINGFACE_HUB_TOKEN="${HF_TOKEN}"
-
-set -euo pipefail
-mkdir -p logs
 
 srun --cpu-bind=none python3 - <<'PY'
 import json
@@ -36,31 +34,76 @@ from ontoaligner.encoder import ConceptLLMEncoder
 from ontoaligner.ontology.generic import GenericOMDataset
 from ontoaligner.pipeline import OntoAlignerPipeline
 from ontoaligner.ontology.deeponto_verbalizer import DeepOntoAxiomEnricher
-from ontoaligner.aligner.llm.dataset import ( OccoMeshSourceToTargetZeroShotDataset,
+from ontoaligner.aligner.llm.dataset import ( 
+ OccoMeshSourceToTargetZeroShotDataset,
  OccoMeshTargetToSourceZeroShotDataset, 
  OccoMeshSourceToTargetFewShotDataset, 
  OccoMeshTargetToSourceFewShotDataset,
 )
 
-
-#candidate_file = (
- #   "/vast/ve83rur/OntoAligner/bash/"
-  #  "results/Qwen3-32B/"
-   # "Qwen3-32B_raw_s_f_occo_mesh_deeponto_stage1_case4.json"
-                                                                 # "Qwen3-32B_raw_s_f_mesh_second_deeponto.json"   "second_pair.json"
-                                                                 # "Llama-3.3-70B-Instruct_raw_s_f_mesh_ons_deeponto_stage1_case4.json"
-                                                                 # "Qwen3-32B_raw_s_f_mesh_ons_deeponto_stage1_case4.json" 
-#)
+# Change only this value when selecting another experiment.
+experiment_name = "source_to_target_zero_shot"           # or experiment_name = "target_to_source_zero_shot" /"source_to_target_few_shot" /"target_to_source_few_shot"
 
 
+experiment_configs = {
+    "source_to_target_zero_shot": {
+        "dataset_class": OccoMeshSourceToTargetZeroShotDataset,
+        "direction": "1-2",
+        "prompt_mode": "without_eg",
+    },
+    "target_to_source_zero_shot": {
+        "dataset_class": OccoMeshTargetToSourceZeroShotDataset,
+        "direction": "2-1",
+        "prompt_mode": "without_eg",
+    },
+    "source_to_target_few_shot": {
+        "dataset_class": OccoMeshSourceToTargetFewShotDataset,
+        "direction": "1-2",
+        "prompt_mode": "with_eg",
+    },
+    "target_to_source_few_shot": {
+        "dataset_class": OccoMeshTargetToSourceFewShotDataset,
+        "direction": "2-1",
+        "prompt_mode": "with_eg",
+    },
+}
 
-candidate_file = (
-    "/vast/ve83rur/OntoAligner/bash/"
-    "results/Llama-3.3-70B-Instruct/"
-    "Llama-3.3-70B-Instruct_raw_s_f_mesh_ons_deeponto_stage1_case4.json"                                                       
-)
+experiment = experiment_configs[experiment_name]
 
+dataset_class = experiment["dataset_class"]
+direction = experiment["direction"]
+prompt_mode = experiment["prompt_mode"]
 
+stage1_run = "qwen"  # Available options: "qwen", "llama"
+
+stage1_configs = {
+    "qwen": {
+        "model_name": "Qwen",
+        "candidate_file": (
+            "results/Stage_1/Qwen/occo_mesh/"
+            "Qwen3-32B_raw_s_f_occo_mesh_deeponto_stage1_case4.json"
+        ),
+    },
+    "llama": {
+        "model_name": "Llama",
+        "candidate_file": (
+            "results/Stage_1/Llama/occo_mesh/"
+            "Llama-3.3-70B-Instruct_raw_s_f_occo_mesh_"
+            "deeponto_stage1_case4.json"
+        ),
+    },
+}
+
+stage1_config = stage1_configs.get(stage1_run)
+
+if stage1_config is None:
+    raise ValueError(
+        f"Unknown stage1_run: {stage1_run}. "
+        f"Available options: {list(stage1_configs)}"
+    )
+
+stage1_model_name = stage1_config["model_name"]
+candidate_file = stage1_config["candidate_file"]
 
 if not os.path.isfile(candidate_file):
     raise FileNotFoundError(
@@ -122,13 +165,10 @@ target_enricher.enrich(
 out = pipe(
     method="llm",
     encoder_model=ConceptLLMEncoder(),
-    dataset_class=OccoMeshSourceToTargetZeroShotDataset,
-    #dataset_class=OccoMeshTargetToSourceZeroShotDataset,
-    #dataset_class=OccoMeshSourceToTargetFewShotDataset,
-    #dataset_class=OccoMeshTargetToSourceFewShotDataset,
+    dataset_class=dataset_class,
 
     candidate_matching_path=candidate_file,
-    llm_prompt_preview_count=2,                       # For all the input to the prompt print in log # llm_prompt_preview_count=14, by default to 0
+    llm_prompt_preview_count=1,                       # For all the input to the prompt print in log # llm_prompt_preview_count=14, by default to 0
 
     llm_path="meta-llama/Llama-3.3-70B-Instruct",
     #llm_path="Qwen/Qwen3-32B",
@@ -158,22 +198,26 @@ out = pipe(
     },
 )
 
-
 print("Done. Output type:", type(out))
 print("Number of processed candidate pairs:", len(out))
 
 if out:
     print("First item:")
     print(json.dumps(out[0], indent=2, ensure_ascii=False))
+    
+stage2_model_name = "Llama-3.3-70B-Instruct"
+ontology_pair = "mesh_ons"
+experiment_case = "case6"
 
-run_name = "Llama_Stage1_Llama-3.3-70B-Instruct_raw_s_f_occo_mesh_stage2_case6_without_eg_1-2"
+run_name = (
+    f"{stage1_model_name}_Stage1_"
+    f"{stage2_model_name}_"
+    f"raw_s_f_{ontology_pair}_stage2_"
+    f"{experiment_case}_{prompt_mode}_{direction}"
+)
 
-#run_name = "Qwen_Stage1_Llama-3.3-70B-Instruct_raw_s_f_occo_mesh_stage2_case6_with_eg_2-1"
-
+print("Run name:", run_name)
 out_dir = "results/Llama-3.3-70B-Instruct/reason_deeponto"
-
-#run_name = "Qwen3-32B_raw_s_f_occo_ons_stage2_case6"
-#out_dir = "results/Qwen3-32B/reason_deeponto"
 
 os.makedirs(out_dir, exist_ok=True)
 

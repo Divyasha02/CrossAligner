@@ -138,8 +138,6 @@ pipe = OntoAlignerPipeline(
     output_format="json",
 )
 
-
-
 source_enricher = DeepOntoAxiomEnricher(
     ontology_path="/vast/ve83rur/OntoAligner/assets/food-onto/mesh.owl",
     max_axioms_per_class=8,
@@ -210,7 +208,6 @@ if out:
     print("First item:")
     print(json.dumps(out[0], indent=2, ensure_ascii=False))
 
-stage1_model_name = "Qwen"   # Or Llama
 stage2_model_name = "Llama-3.3-70B-Instruct"
 ontology_pair = "mesh_ons"
 experiment_case = "case6"
