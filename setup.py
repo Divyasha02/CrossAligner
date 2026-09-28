@@ -15,8 +15,6 @@ setup(
     url="https://github.com/sciknoworg/OntoAligner",
     packages=find_packages(),
     install_requires=[
-        "pathlib",
-        "argparse",
         "datasets",
         "numpy",
         "pandas",
@@ -27,9 +25,12 @@ setup(
         "rank_bm25==0.2.2",
         "rapidfuzz==3.5.2",
         "rdflib==7.1.1",
+        "deeponto==0.9.3",
+        "JPype1>=1.5.0,<2.0.0",
         "sentence-transformers>=5.1.0,<6.0.0",
         "torch>=2.8.0,<3.0.0",
         "transformers>=4.56.0,<5.0.0",
+        "accelerate>=1.0.0,<2.0.0",
         "huggingface-hub>=0.34.4,<1.0.0",
         "bitsandbytes>=0.45.1,<1.0.0; platform_system == 'Linux'",
         "pykeen==1.11.1"

@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/usr/bin/env bash
 #SBATCH --job-name=ontoalign-Qwen3-32B-reason
 #SBATCH --nodes=1
 #SBATCH --partition=gpu,gpu-test
@@ -13,9 +13,17 @@
 #SBATCH --mail-user=divyasha.sunil.naik@uni-jena.de
 #SBATCH --mail-type=ALL
 
-
 set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
+cd "$PROJECT_ROOT"
+
+: "${HF_TOKEN:?HF_TOKEN is not set. Export it before submitting the job.}"
 mkdir -p logs
+
+
+
 
 echo "# Job $SLURM_JOB_NAME started at $(date +%F-%T)"
 module purge;
@@ -137,14 +145,14 @@ pipe = OntoAlignerPipeline(
 
 
 source_enricher = DeepOntoAxiomEnricher(
-    ontology_path="/vast/ve83rur/OntoAligner/assets/food-onto/occo.owl",
+    ontology_path="assets/food-onto/occo.owl",
     max_axioms_per_class=8,
     include_named_subclass_axioms=False,
     jvm_memory="4g",
 )
 
 target_enricher = DeepOntoAxiomEnricher(
-    ontology_path="/vast/ve83rur/OntoAligner/assets/food-onto/mesh.owl",
+    ontology_path="assets/food-onto/mesh.owl",
     max_axioms_per_class=8,
     include_named_subclass_axioms=False,
     jvm_memory="4g",

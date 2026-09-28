@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #SBATCH --job-name=ontoalign-Qwen3-32B-raw_s_f
 #SBATCH --nodes=1
 #SBATCH --partition=gpu,gpu-test
@@ -13,6 +13,16 @@
 #SBATCH --mail-user=divyasha.sunil.naik@uni-jena.de
 #SBATCH --mail-type=ALL
 
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
+cd "$PROJECT_ROOT"
+
+: "${HF_TOKEN:?HF_TOKEN is not set. Export it before submitting the job.}"
+mkdir -p logs
+
+
 
 echo "# Job $SLURM_JOB_NAME started at $(date +%F-%T)"
 module purge;
@@ -21,7 +31,6 @@ export http_proxy="http://internet4nzm.rz.uni-jena.de:3128"
 export https_proxy="http://internet4nzm.rz.uni-jena.de:3128"
 export HUGGINGFACE_HUB_TOKEN="${HF_TOKEN}"
 
-mkdir -p logs;
 
 srun --cpu-bind=none python3 - <<'PY'
 

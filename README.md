@@ -1,194 +1,184 @@
-<div align="center">
-  <img src="https://raw.githubusercontent.com/sciknoworg/OntoAligner/main/images/logo-with-background.png" alt="OntoAligner Logo"/>
-</div>
+# CrossAligner
 
-<div align="center">
+CrossAligner is a two-stage, large-language-model pipeline for discovering directed semantic bridges between ontologies developed from different perspectives. This repository extends the [OntoAligner](https://github.com/sciknoworg/OntoAligner) toolkit with candidate filtering, DeepOnto axiom verbalisation, configurable Stage-2 prompts, and experiments for three food-domain ontology pairs.
 
-[![PyPI version](https://badge.fury.io/py/OntoAligner.svg)](https://badge.fury.io/py/OntoAligner)
-[![PyPI Downloads](https://static.pepy.tech/badge/ontoaligner)](https://pepy.tech/projects/ontoaligner)
-![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)
-[![pre-commit](https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit)](https://github.com/pre-commit/pre-commit)
-[![Documentation Status](https://readthedocs.org/projects/ontoaligner/badge/?version=main)](https://ontoaligner.readthedocs.io/)
-[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](MAINTANANCE.md)
- [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14533133.svg)](https://doi.org/10.5281/zenodo.14533133)
+## Pipeline overview
 
-</div>
+1. **Stage 1 — candidate selection:** an LLM performs binary screening and retains concept pairs that may be semantically related.
+2. **Stage 2 — semantic-bridge generation:** an LLM reassesses the retained pairs using richer ontology context and produces a directed natural-language relationship.
 
-<h3 align="center">OntoAligner: A Comprehensive Modular and Robust Python Toolkit for Ontology Alignment</h3>
+The included experiments cover:
 
-**OntoAligner** is a Python library designed to simplify ontology alignment and matching for researchers, practitioners, and developers. With a modular architecture and robust features, OntoAligner provides powerful tools to bridge ontologies effectively.
+- MeSH → ONS
+- OccO → MeSH
+- OccO → ONS
 
+Stage 2 supports source-to-target and target-to-source directions, each with zero-shot and few-shot prompts.
 
-## 🧪 Installation
+## Repository structure
 
-You can install **OntoAligner** from PyPI using `pip`:
+```text
+CrossAligner/
+├── assets/food-onto/       # MeSH, OccO, and ONS ontology modules
+├── bash/                   # Slurm scripts for Stage 1 and Stage 2
+├── ontoaligner/            # Python package and pipeline implementation
+├── results/
+│   ├── Stage_1/            # Candidate pairs
+│   └── Stage_2/            # Directed semantic-bridge outputs
+├── evaluation/             # Evaluation notebook, tables, and figures
+├── requirements.txt
+└── setup.py
+```
+
+## Requirements
+
+The experimental configuration was developed for:
+
+- Linux
+- Python 3.10 or 3.11
+- an NVIDIA CUDA GPU
+- Java 11 for DeepOnto/OWLAPI
+- a Hugging Face account with access to the selected gated model
+
+The Slurm scripts request one GPU, eight CPUs, and 128 GB RAM. Adjust the `#SBATCH` settings for another cluster.
+
+## Installation
+
+Clone the repository and enter it:
 
 ```bash
-pip install ontoaligner
+git clone git@github.com:Divyasha02/CrossAligner.git
+cd CrossAligner
 ```
 
-Alternatively, to get the latest version directly from the source, use the following commands:
+Create an isolated environment:
 
 ```bash
-git clone git@github.com:sciknoworg/OntoAligner.git
-pip install ./ontoaligner
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+pip install -e . --no-deps
 ```
 
-Next, verify the installation:
+Check Java and the package import:
+
+```bash
+java -version
+
+python - <<'PY'
+from ontoaligner.pipeline import OntoAlignerPipeline
+from ontoaligner.encoder import ConceptCandidateLLMEncoder, ConceptLLMEncoder
+
+print("CrossAligner imports succeeded.")
+PY
+```
+
+## Hugging Face token
+
+Do not write a Hugging Face token inside a Bash file. Export it in the shell before submitting a job:
+
+```bash
+export HF_TOKEN="your_hugging_face_token"
+```
+
+The job scripts copy this value to `HUGGINGFACE_HUB_TOKEN`. They stop with a clear error when `HF_TOKEN` is missing.
+
+## Repository root and paths
+
+The Bash scripts determine the repository root from their own location:
+
+```bash
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
+cd "$PROJECT_ROOT"
+```
+
+Consequently, ontology and result paths are relative to the clone itself. No username-specific path such as `/vast/<user>/...` is required.
+
+Slurm must create its output file before the script starts, so create `logs/` and submit jobs from the repository root:
+
+```bash
+cd "$(git rev-parse --show-toplevel)"
+mkdir -p logs
+```
+
+## Running Stage 1
+
+Submit the script for the required ontology pair:
+
+```bash
+sbatch bash/Qwen3-32B-raw_s_f_DeepOnto_mesh_ons_stage1.bash
+sbatch bash/Qwen3-32B-raw_s_f_DeepOnto_occo_mesh_stage1.bash
+sbatch bash/Qwen3-32B-raw_s_f_DeepOnto_occo_ons_stage1.bash
+```
+
+Stage-1 JSON and CSV files are written below:
+
+```text
+results/Stage_1/<model>/<ontology_pair>/
+```
+
+Before starting Stage 2, confirm that the selected candidate JSON exists in that directory.
+
+## Running Stage 2
+
+Each Stage-2 script contains two experiment selectors:
 
 ```python
-import ontoaligner
-
-print(ontoaligner.__version__)
+experiment_name = "source_to_target_zero_shot"
+stage1_run = "qwen"
 ```
 
-## 📚 Documentation
+Available `experiment_name` values are:
 
-Comprehensive documentation for OntoAligner, including detailed guides and examples, is available at **[ontoaligner.readthedocs.io](https://ontoaligner.readthedocs.io/)**. Below are some key tutorials with links to both the documentation and the corresponding example codes.
+- `source_to_target_zero_shot`
+- `target_to_source_zero_shot`
+- `source_to_target_few_shot`
+- `target_to_source_few_shot`
 
+Available `stage1_run` values are `qwen` and `llama`.
 
+Submit the selected ontology pair:
 
-| Example                        | Tutorial                                                                                                |                                            Script                                             |
-|:-------------------------------|:--------------------------------------------------------------------------------------------------------|:---------------------------------------------------------------------------------------------:|
-| Lightweight                    | [📚 Fuzzy Matching](https://ontoaligner.readthedocs.io/aligner/lightweight.html)                        |   [📝 Code](https://github.com/sciknoworg/OntoAligner/blob/main/examples/fuzzy_matching.py)   |
-| Retrieval                      | [📚 Retrieval Aligner](https://ontoaligner.readthedocs.io/aligner/retriever.html)                       | [📝 Code](https://github.com/sciknoworg/OntoAligner/blob/main/examples/retriever_matching.py) |
-| Large Language Models          | [📚 LLM Aligner](https://ontoaligner.readthedocs.io/aligner/llm.html)                                   |    [📝 Code](https://github.com/sciknoworg/OntoAligner/blob/main/examples/llm_matching.py)    |
-| Retrieval Augmented Generation | [📚 RAG Aligner](https://ontoaligner.readthedocs.io/aligner/rag.html)                                   |       [📝 Code](https://github.com/sciknoworg/OntoAligner/blob/main/examples/rag_matching.py)|
-| FewShot                        | [📚 FewShot-RAG Aligner](https://ontoaligner.readthedocs.io/aligner/rag.html#fewshot-rag)               |       [📝 Code](https://github.com/sciknoworg/OntoAligner/blob/main/examples/rag_matching.py)
-| In-Context Vectors Learning    | [📚 In-Context Vectors RAG](https://ontoaligner.readthedocs.io/aligner/rag.html#in-context-vectors-rag) |       [📝 Code](https://github.com/sciknoworg/OntoAligner/blob/main/examples/icv_rag_matching.py)
-| Knowledge Graph Embedding      | [📚 KGE Aligner](https://ontoaligner.readthedocs.io/aligner/kge.html)            |       [📝 Code](https://github.com/sciknoworg/OntoAligner/blob/main/examples/kge.py)
-| eCommerce  | [📚 Product Alignment in eCommerce](https://ontoaligner.readthedocs.io/usecases/ecommerce.html)                  |       [📝 Code](https://github.com/sciknoworg/OntoAligner/blob/dev/examples/ecommerce_product_alignment.py)
-
-## 🚀 Quick Tour
-
-Below is an example of using Retrieval-Augmented Generation (RAG) step-by-step approach for ontology matching:
-
-```python
-from ontoaligner.ontology import MaterialInformationMatOntoOMDataset
-from ontoaligner.utils import metrics, xmlify
-from ontoaligner.aligner import MistralLLMBERTRetrieverRAG
-from ontoaligner.encoder import ConceptParentRAGEncoder
-from ontoaligner.postprocess import rag_hybrid_postprocessor
-
-# Step 1: Initialize the dataset object for MaterialInformation MatOnto dataset
-task = MaterialInformationMatOntoOMDataset()
-print("Test Task:", task)
-
-# Step 2: Load source and target ontologies along with reference matchings
-dataset = task.collect(
-    source_ontology_path="assets/MI-MatOnto/mi_ontology.xml",
-    target_ontology_path="assets/MI-MatOnto/matonto_ontology.xml",
-    reference_matching_path="assets/MI-MatOnto/matchings.xml"
-)
-
-# Step 3: Encode the source and target ontologies
-encoder_model = ConceptParentRAGEncoder()
-encoded_ontology = encoder_model(source=dataset['source'], target=dataset['target'])
-
-# Step 4: Define configuration for retriever and LLM
-retriever_config = {"device": 'cuda', "top_k": 5}
-llm_config = {"device": "cuda", "max_length": 300, "max_new_tokens": 10, "batch_size": 15}
-
-# Step 5: Initialize Generate predictions using RAG-based ontology matcher
-model = MistralLLMBERTRetrieverRAG(retriever_config=retriever_config, llm_config=llm_config)
-model.load(llm_path = "mistralai/Mistral-7B-v0.3", ir_path="all-MiniLM-L6-v2")
-predicts = model.generate(input_data=encoded_ontology)
-
-# Step 6: Apply hybrid postprocessing
-hybrid_matchings, hybrid_configs = rag_hybrid_postprocessor(predicts=predicts,
-                                                            ir_score_threshold=0.1,
-                                                            llm_confidence_th=0.8)
-
-evaluation = metrics.evaluation_report(predicts=hybrid_matchings, references=dataset['reference'])
-print("Hybrid Matching Evaluation Report:", evaluation)
-
-# Step 7: Convert matchings to XML format and save the XML representation
-xml_str = xmlify.xml_alignment_generator(matchings=hybrid_matchings)
-open("matchings.xml", "w", encoding="utf-8").write(xml_str)
+```bash
+sbatch bash/Qwen3-32B-raw_s_f_DeepOnto_stages2_mesh_ons.bash
+sbatch bash/Qwen3-32B-raw_s_f_DeepOnto_stages2_occo_mesh.bash
+sbatch bash/Qwen3-32B-raw_s_f_DeepOnto_stages2_occo_ons.bash
 ```
 
-Ontology alignment pipeline using RAG method:
+Stage-2 outputs are stored below:
 
-```python
-import ontoaligner
-
-pipeline = ontoaligner.OntoAlignerPipeline(
-    task_class=ontoaligner.ontology.MouseHumanOMDataset,
-    source_ontology_path="assets/MI-MatOnto/mi_ontology.xml",
-    target_ontology_path="assets/MI-MatOnto/matonto_ontology.xml",
-    reference_matching_path="assets/MI-MatOnto/matchings.xml"
-)
-
-matchings, evaluation = pipeline(
-    method="rag",
-    encoder_model=ontoaligner.encoder.ConceptRAGEncoder(),
-    model_class=ontoaligner.aligner.MistralLLMBERTRetrieverRAG,
-    postprocessor=ontoaligner.postprocess.rag_hybrid_postprocessor,
-    llm_path='mistralai/Mistral-7B-v0.3',
-    retriever_path='all-MiniLM-L6-v2',
-    llm_threshold=0.5,
-    ir_rag_threshold=0.7,
-    top_k=5,
-    max_length=512,
-    max_new_tokens=10,
-    device='cuda',
-    batch_size=32,
-    return_matching=True,
-    evaluate=True
-)
-
-print("Matching Evaluation Report:", evaluation)
+```text
+results/Stage_2/<ontology_pair>/
 ```
-## 👥 Contact & Contributions
 
-We welcome contributions to enhance OntoAligner and make it even better! Please review our contribution guidelines in [CONTRIBUTING.md](CONTRIBUTING.md) before getting started. You are also welcome to assist with the ongoing maintenance by referring to [MAINTENANCE.md](MAINTENANCE.md). Your support is greatly appreciated.
+The generated filename records the Stage-1 model, Stage-2 model, ontology pair, prompt mode, and direction.
 
+## Preflight checks
 
-If you encounter any issues or have questions, please submit them in the [GitHub issues tracker](https://github.com/sciknoworg/OntoAligner/issues).
+Run these checks before requesting GPU resources:
 
+```bash
+for script in bash/*.bash; do
+    bash -n "$script" || exit 1
+done
 
-## 📚 Citing this Work
+python -m compileall -q ontoaligner main.py
+```
 
-If you use OntoAligner in your work or research, please cite the following preprint:
+Inspect the first prompt in the Slurm log. The Stage-2 scripts use `llm_prompt_preview_count=1` for this purpose.
 
-- OntoAligner Library:
-    > Babaei Giglou, H., D’Souza, J., Karras, O., Auer, S. (2025). OntoAligner: A Comprehensive Modular and Robust Python Toolkit for Ontology Alignment. In: Curry, E., et al. The Semantic Web. ESWC 2025. Lecture Notes in Computer Science, vol 15719. Springer, Cham. https://doi.org/10.1007/978-3-031-94578-6_10
+## Common errors
 
-    📌 BibTeX
-    ```bibtex
-    @InProceedings{10.1007/978-3-031-94578-6_10,
-        author="Babaei Giglou, Hamed and D'Souza, Jennifer and Karras, Oliver and Auer, S{\"o}ren",
-        editor="Curry, Edward and Acosta, Maribel and Poveda-Villal{\'o}n, Maria and van Erp, Marieke and Ojo, Adegboyega and Hose, Katja and Shimizu, Cogan and Lisena, Pasquale",
-        title="OntoAligner: A Comprehensive Modular and Robust Python Toolkit for Ontology Alignment",
-        booktitle="The Semantic Web",
-        year="2025",
-        publisher="Springer Nature Switzerland",
-        address="Cham",
-        pages="174--191"
-    }
-    ```
+- **Candidate file not found:** run Stage 1 first, select the correct `stage1_run`, and submit from the repository clone.
+- **Hugging Face authentication error:** export `HF_TOKEN` and verify that the account has access to the model.
+- **DeepOnto or JVM error:** confirm that `deeponto`, `JPype1`, and Java 11 are available.
+- **CUDA out of memory:** reduce the batch size or change the quantisation/device-map configuration.
+- **No Slurm log:** create `logs/` before calling `sbatch`.
 
-- LLMs4OM (for RAG module)
-    >   Babaei Giglou, H., D’Souza, J., Engel, F., Auer, S. (2025). LLMs4OM: Matching Ontologies with Large Language Models. In: Meroño Peñuela, A., et al. The Semantic Web: ESWC 2024 Satellite Events. ESWC 2024. Lecture Notes in Computer Science, vol 15344. Springer, Cham. https://doi.org/10.1007/978-3-031-78952-6_3
+## Acknowledgement and license
 
-    📌 BibTeX
-    ```bibtex
-    @InProceedings{10.1007/978-3-031-78952-6_3,
-      author="Babaei Giglou, Hamed and D'Souza, Jennifer and Engel, Felix and Auer, S{\"o}ren",
-      editor="Mero{\~{n}}o Pe{\~{n}}uela, Albert and Corcho, Oscar and Groth, Paul and Simperl, Elena and Tamma, Valentina and Nuzzolese, Andrea Giovanni and Poveda-Villal{\'o}n, Maria and Sabou, Marta and Presutti, Valentina and Celino, Irene and Revenko, Artem and Raad, Joe and Sartini, Bruno and Lisena, Pasquale",
-      title="LLMs4OM: Matching Ontologies with Large Language Models",
-      booktitle="The Semantic Web: ESWC 2024 Satellite Events",
-      year="2025",
-      publisher="Springer Nature Switzerland",
-      address="Cham",
-      pages="25--35",
-      isbn="978-3-031-78952-6"
-      }
-    ```
+CrossAligner builds on OntoAligner by Babaei Giglou et al. The original copyright notices are retained in inherited files.
 
-## 📃 License
-
-This software is licensed under [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0).
-
-[//]: # (This work is licensed under a MIT License)
-[//]: # (is archived in Zenodo under the DOI [![DOI]&#40;https://zenodo.org/badge/DOI/10.5281/zenodo.14533133.svg&#41;]&#40;https://doi.org/10.5281/zenodo.14533133&#41; and )
+The project is distributed under the Apache License 2.0. See [LICENSE](LICENSE), [CONTRIBUTING.md](CONTRIBUTING.md), and [CITATION.cff](CITATION.cff).
