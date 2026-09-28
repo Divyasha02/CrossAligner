@@ -94,7 +94,7 @@ if isinstance(out, list) and out:
 # ---- post-run export block ----
 # raw-mode export
 run_name = "Qwen3-32B_raw_s_f_occo_mesh_deeponto_stage1_case4"                     #"Qwen3-32B_raw_s_f_mesh_ons_binary"
-out_dir = "results/Qwen3-32B"
+out_dir = "results/Stage_1/Qwen/occo_mesh"
 
 #run_name = "Llama-3.3-70B-Instruct_raw_s_f_occo_mesh_deeponto_stage1_case4"
 #out_dir = "results/Llama-3.3-70B-Instruct"

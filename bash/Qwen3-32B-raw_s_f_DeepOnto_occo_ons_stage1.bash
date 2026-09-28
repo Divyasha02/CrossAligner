@@ -97,7 +97,7 @@ if isinstance(out, list) and out:
 #out_dir = "results/Qwen3-32B"
 
 run_name = "Llama-3.3-70B-Instruct_raw_s_f_occo_ons_deeponto_stage1_case4"
-out_dir = "results/Llama-3.3-70B-Instruct"
+out_dir = "results/Stage_1/Llama/occo_ons"
 
 os.makedirs(out_dir, exist_ok=True)
 

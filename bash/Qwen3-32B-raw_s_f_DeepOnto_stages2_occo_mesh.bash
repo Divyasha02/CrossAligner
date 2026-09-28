@@ -206,7 +206,7 @@ if out:
     print(json.dumps(out[0], indent=2, ensure_ascii=False))
     
 stage2_model_name = "Llama-3.3-70B-Instruct"
-ontology_pair = "mesh_ons"
+ontology_pair = "occo_mesh"
 experiment_case = "case6"
 
 run_name = (

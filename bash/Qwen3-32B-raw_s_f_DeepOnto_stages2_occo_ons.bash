@@ -216,7 +216,7 @@ run_name = (
 )
 
 print("Run name:", run_name)
-out_dir = "results/Llama-3.3-70B-Instruct/reason_deeponto"
+out_dir = f"results/Stage_2/{ontology_pair}"
 
 os.makedirs(out_dir, exist_ok=True)
 

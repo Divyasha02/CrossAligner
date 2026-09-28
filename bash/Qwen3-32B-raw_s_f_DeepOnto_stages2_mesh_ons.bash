@@ -82,16 +82,14 @@ stage1_configs = {
     "qwen": {
         "model_name": "Qwen",
         "candidate_file": (
-            "/vast/ve83rur/OntoAligner/bash/"
-            "results/Qwen3-32B/"
+            "results/Stage_1/Qwen/mesh_ons/"
             "Qwen3-32B_raw_s_f_mesh_ons_deeponto_stage1_case4.json"
         ),
     },
     "llama": {
         "model_name": "Llama",
         "candidate_file": (
-            "/vast/ve83rur/OntoAligner/bash/"
-            "results/Llama-3.3-70B-Instruct/"
+            "results/Stage_1/Llama/mesh_ons/"
             "Llama-3.3-70B-Instruct_raw_s_f_mesh_ons_"
             "deeponto_stage1_case4.json"
         ),
@@ -220,7 +218,7 @@ run_name = (
 )
 
 print("Run name:", run_name)
-out_dir = "results/Llama-3.3-70B-Instruct/reason_deeponto"
+out_dir = f"results/Stage_2/{ontology_pair}"
 
 
 os.makedirs(out_dir, exist_ok=True)
