@@ -42,15 +42,6 @@ The experimental configuration was developed for:
 
 The Slurm scripts request one GPU, eight CPUs, and 128 GB RAM. Adjust the `#SBATCH` settings for another cluster.
 
-## Installation
-
-Clone the repository and enter it:
-
-```bash
-git clone git@github.com:Divyasha02/CrossAligner.git
-cd CrossAligner
-```
-
 Create an isolated environment:
 
 ```bash
@@ -83,16 +74,6 @@ export HF_TOKEN="your_hugging_face_token"
 ```
 
 The job scripts copy this value to `HUGGINGFACE_HUB_TOKEN`. They stop with a clear error when `HF_TOKEN` is missing.
-
-## Repository root and paths
-
-The Bash scripts determine the repository root from their own location:
-
-```bash
-SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
-cd "$PROJECT_ROOT"
-```
 
 Consequently, ontology and result paths are relative to the clone itself. No username-specific path such as `/vast/<user>/...` is required.
 
@@ -154,28 +135,6 @@ results/Stage_2/<ontology_pair>/
 ```
 
 The generated filename records the Stage-1 model, Stage-2 model, ontology pair, prompt mode, and direction.
-
-## Preflight checks
-
-Run these checks before requesting GPU resources:
-
-```bash
-for script in bash/*.bash; do
-    bash -n "$script" || exit 1
-done
-
-python -m compileall -q ontoaligner main.py
-```
-
-Inspect the first prompt in the Slurm log. The Stage-2 scripts use `llm_prompt_preview_count=1` for this purpose.
-
-## Common errors
-
-- **Candidate file not found:** run Stage 1 first, select the correct `stage1_run`, and submit from the repository clone.
-- **Hugging Face authentication error:** export `HF_TOKEN` and verify that the account has access to the model.
-- **DeepOnto or JVM error:** confirm that `deeponto`, `JPype1`, and Java 11 are available.
-- **CUDA out of memory:** reduce the batch size or change the quantisation/device-map configuration.
-- **No Slurm log:** create `logs/` before calling `sbatch`.
 
 ## Acknowledgement and license
 
