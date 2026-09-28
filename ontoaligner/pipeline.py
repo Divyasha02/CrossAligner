@@ -535,8 +535,6 @@ class OntoAlignerPipeline:
             concept["iri"]: concept
             for concept in self.dataset["target"]
         }
-
-        return matchings
         
         for matching in matchings:
             source_iri = matching["source"]

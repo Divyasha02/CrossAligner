@@ -83,8 +83,8 @@ out = pipe(
     batch_size=1,
     max_length=800,
     max_new_tokens=10,
-    output_file_name="qwen3_32b_s_f_occo_ons",
-    save_matchings=True,
+
+    save_matchings=False,
     return_matching=True,
     llm_kwargs={
         "num_beams": 1,

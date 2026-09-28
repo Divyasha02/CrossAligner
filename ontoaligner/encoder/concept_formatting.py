@@ -30,7 +30,7 @@ def format_candidate_concept_context(owl: Dict[str, Any]) -> str:
     concept_label = owl.get("label") or owl.get("name") or owl.get("iri", "(none)")
     synonyms = _join_labels(owl.get("synonyms", []))
     definition = _join_comments(owl.get("comment", []))
-    verbalized_axioms = _join_axioms(owl.get("verbalized_axioms", []))
+    #verbalized_axioms = _join_axioms(owl.get("verbalized_axioms", []))
     return (
         f"Concept: {concept_label}\n"
         f"Synonyms: {synonyms}\n"
@@ -82,17 +82,22 @@ def _format_restrictions(restrictions: List[Dict[str, Any]]) -> str:
     return "; ".join(rendered_restrictions) if rendered_restrictions else "(none)"
     
 def format_concept_definition_context(owl: Dict[str, Any]) -> str:
-    """
-    Compact concept context intended for retrieval encoders.
-
-    Includes only concept label/name and definition/comment text.
-    """
-    concept_label = owl.get("label") or owl.get("name") or owl.get("iri", "(none)")
+    """Compact concept context for retrieval encoders."""
+    concept_label = (
+        owl.get("label")
+        or owl.get("name")
+        or owl.get("iri", "(none)")
+    )
     definition = _join_comments(owl.get("comment", []))
+    restrictions = _format_restrictions(
+        owl.get("restrictions", [])
+    )
+
     return (
         f"Concept: {concept_label}\n"
-        f"Definition: {definition}"
+        f"Definition: {definition}\n"
         f"Restrictions: {restrictions}"
+    )
     )
 
 
@@ -107,28 +112,3 @@ def format_concept_prompt_context(owl: Dict[str, Any]) -> str:
     return (
         f"Concept: {concept_label}"
     )
-
-
-def _format_restrictions(restrictions: List[Dict[str, Any]]) -> str:
-    rendered_restrictions = []
-    for restriction in restrictions or []:
-        on_property = restriction.get("on_property")
-        some_values_from = restriction.get("someValuesFrom")
-        all_values_from = restriction.get("allValuesFrom")
-        cardinality = restriction.get("cardinality")
-        min_cardinality = restriction.get("minCardinality")
-        max_cardinality = restriction.get("maxCardinality")
-
-        if on_property and some_values_from:
-            rendered_restrictions.append(f"{on_property} some {some_values_from}")
-        elif on_property and all_values_from:
-            rendered_restrictions.append(f"{on_property} all {all_values_from}")
-        elif on_property and cardinality is not None:
-            rendered_restrictions.append(f"{on_property} exactly {cardinality}")
-        elif on_property and min_cardinality is not None:
-            rendered_restrictions.append(f"{on_property} min {min_cardinality}")
-        elif on_property and max_cardinality is not None:
-            rendered_restrictions.append(f"{on_property} max {max_cardinality}")
-        elif on_property:
-            rendered_restrictions.append(str(on_property))
-    return "; ".join(rendered_restrictions) if rendered_restrictions else "(none)"
