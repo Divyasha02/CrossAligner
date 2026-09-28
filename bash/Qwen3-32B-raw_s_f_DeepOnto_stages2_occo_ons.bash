@@ -32,20 +32,15 @@ import os
 import pandas as pd
     
 from transformers import BitsAndBytesConfig
-from ontoaligner.aligner import CandidateConceptLLMDataset
 from ontoaligner.encoder import ConceptLLMEncoder
-from ontoaligner.encoder.concept_formatting import (
-    format_concept_context,
-    format_candidate_concept_context,
-)
-
 from ontoaligner.ontology.generic import GenericOMDataset
 from ontoaligner.pipeline import OntoAlignerPipeline
 from ontoaligner.ontology.deeponto_verbalizer import DeepOntoAxiomEnricher
-from ontoaligner.aligner.llm.dataset import OccoMeshSourceToTargetZeroShotDataset
-from ontoaligner.aligner.llm.dataset import OccoMeshTargetToSourceZeroShotDataset
-from ontoaligner.aligner.llm.dataset import OccoMeshSourceToTargetFewShotDataset
-from ontoaligner.aligner.llm.dataset import OccoMeshTargetToSourceFewShotDataset
+from ontoaligner.aligner.llm.dataset import ( OccoOnsSourceToTargetZeroShotDataset,
+ OccoOnsTargetToSourceZeroShotDataset,
+ OccoOnsSourceToTargetFewShotDataset,
+ OccoOnsTargetToSourceFewShotDataset,
+)
 
 
 #candidate_file = (
@@ -124,10 +119,10 @@ target_enricher.enrich(
 out = pipe(
     method="llm",
     encoder_model=ConceptLLMEncoder(),
-    dataset_class=OccoMeshSourceToTargetZeroShotDataset,
-    #dataset_class=OccoMeshTargetToSourceZeroShotDataset,
-    #dataset_class=OccoMeshSourceToTargetFewShotDataset,
-    #dataset_class=OccoMeshTargetToSourceFewShotDataset,
+    dataset_class=OccoOnsSourceToTargetZeroShotDataset,
+    #dataset_class=OccoOnsTargetToSourceZeroShotDataset,
+    #dataset_class=OccoOnsSourceToTargetFewShotDataset,
+    #dataset_class=OccoOnsTargetToSourceFewShotDataset,
 
     candidate_matching_path=candidate_file,
     llm_prompt_preview_count=2,                       # For all the input to the prompt print in log # llm_prompt_preview_count=14, by default to 0
@@ -168,7 +163,7 @@ if out:
     print("First item:")
     print(json.dumps(out[0], indent=2, ensure_ascii=False))
 
-run_name = "Llama_Stage1_Llama-3.3-70B-Instruct_raw_s_f_occo_ons_stage2_case6_with_eg_2-1"       # L-L
+run_name = "Llama_Stage1_Llama-3.3-70B-Instruct_raw_s_f_occo_ons_stage2_case6_without_eg_1-2"       # L-L
 #run_name = "Qwen_Stage1_Llama-3.3-70B-Instruct_raw_s_f_occo_ons_stage2_case6_with_eg_2-1"       # Q-L
 
 out_dir = "results/Llama-3.3-70B-Instruct/reason_deeponto"
